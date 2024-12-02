@@ -18,6 +18,9 @@ CIRRO_JOB_RESULTS = "CIRRO_JOB_RESULTS"  # job result storage location
 CIRRO_DATABASE_CLASS = "CIRRO_DATABASE_CLASS"
 CIRRO_DATABASE = "CIRRO_DATABASE"
 CIRRO_DATASET_PROVIDERS = "CIRRO_DATASET_PROVIDERS"
+CIRRO_JSON_BASE_PATH = (
+    "CIRRO_JSON_BASE_PATH"  # JSON metadata path with local db, as in `cirro launch`
+)
 
 CIRRO_MIXPANEL = "CIRRO_MIXPANEL"
 # for mounting a bucket locally. Comma separated string of bucket:local_path. Example s3://foo/bar:/fsx

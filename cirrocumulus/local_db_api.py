@@ -5,6 +5,7 @@ import datetime
 from cirrocumulus.abstract_db import AbstractDB
 from cirrocumulus.envir import (
     CIRRO_JOB_RESULTS,
+    CIRRO_JSON_BASE_PATH,
     SERVER_CAPABILITY_ADD_DATASET,
     SERVER_CAPABILITY_DELETE_DATASET,
     SERVER_CAPABILITY_EDIT_DATASET,
@@ -66,6 +67,9 @@ class LocalDbAPI(AbstractDB):
             path = paths[i]
             json_data = {}
             basename = os.path.splitext(path)[0]
+            if CIRRO_JSON_BASE_PATH in os.environ and os.environ[CIRRO_JSON_BASE_PATH] is not None:
+                basename = os.path.join(os.environ[CIRRO_JSON_BASE_PATH], basename)
+                os.makedirs(os.path.dirname(basename), mode=0o755, exist_ok=True)
             old_path = basename + "_filters.json"
             json_path = basename + ".json"
             if os.path.exists(old_path) and os.path.getsize(old_path) > 0:

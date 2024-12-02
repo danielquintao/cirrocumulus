@@ -12,6 +12,7 @@ from cirrocumulus.envir import (
     CIRRO_DATABASE,
     CIRRO_JOB_RESULTS,
     CIRRO_JOB_TYPE,
+    CIRRO_JSON_BASE_PATH,
 )
 from cirrocumulus.io_util import SPATIAL_HELP, add_spatial, filter_markers, get_markers
 from cirrocumulus.local_db_api import LocalDbAPI
@@ -135,6 +136,11 @@ def create_parser(description=False):
         + "The datasets will be identified for their extensions and can be pesent in subdirectories of the given directory.",
         action="store_true",
     )
+    parser.add_argument(
+        "--json_path",
+        help="Path to directory where JSON files containing metadata (e.g. your annotations) must be stored. "
+        + "By default (argument not given), the JSON files are written next to the corresponding data file.",
+    )
     return parser
 
 
@@ -148,6 +154,8 @@ def main(argsv):
             if args.use_datadir
             else os.path.join(os.path.dirname(args.dataset[0].rstrip("/")), "results")
         )
+    if args.json_path is not None:
+        os.environ[CIRRO_JSON_BASE_PATH] = args.json_path
     if args.use_datadir:
         args.dataset = filter_dataset_directory(args.dataset[0])
     get_fs(os.environ[CIRRO_JOB_RESULTS]).makedirs(os.environ[CIRRO_JOB_RESULTS], exist_ok=True)
