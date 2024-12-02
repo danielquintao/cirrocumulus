@@ -15,7 +15,7 @@ from cirrocumulus.envir import (
 )
 from cirrocumulus.io_util import SPATIAL_HELP, add_spatial, filter_markers, get_markers
 from cirrocumulus.local_db_api import LocalDbAPI
-from cirrocumulus.util import get_fs
+from cirrocumulus.util import filter_dataset_directory, get_fs
 
 
 def configure_app(app, list_of_dataset_paths, spatial_directories, marker_paths):
@@ -129,6 +129,12 @@ def create_parser(description=False):
     parser.add_argument(
         "--tmap", help="Path(s) to transport maps directory computed with WOT", nargs="*"
     )
+    parser.add_argument(
+        "--use_datadir",
+        help="If used, this argument means that the dataset argument will instead be the path to a directory holding datsets. "
+        + "The datasets will be identified for their extensions and can be pesent in subdirectories of the given directory.",
+        action="store_true",
+    )
     return parser
 
 
@@ -137,9 +143,13 @@ def main(argsv):
     if args.results is not None:
         os.environ[CIRRO_JOB_RESULTS] = args.results
     else:
-        os.environ[CIRRO_JOB_RESULTS] = os.path.join(
-            os.path.dirname(args.dataset[0].rstrip("/")), "results"
+        os.environ[CIRRO_JOB_RESULTS] = (
+            os.path.join(args.dataset[0], "results")
+            if args.use_datadir
+            else os.path.join(os.path.dirname(args.dataset[0].rstrip("/")), "results")
         )
+    if args.use_datadir:
+        args.dataset = filter_dataset_directory(args.dataset[0])
     get_fs(os.environ[CIRRO_JOB_RESULTS]).makedirs(os.environ[CIRRO_JOB_RESULTS], exist_ok=True)
     if args.ontology is not None:
         os.environ[CIRRO_CELL_ONTOLOGY] = args.ontology
