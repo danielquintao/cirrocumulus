@@ -209,3 +209,50 @@ def adata2gct(adata, f):
     )
     write_top_half_gct(f, adata.obs, adata.var, "", "")
     write_bottom_half_gct(f, adata.obs, pd.DataFrame(adata.X), "", data_float_format, "")
+
+
+def filter_dataset_directory(data_dir):
+    """Looks for files or directories that are descendent of data_dir and have a valid extension.
+
+    Args:
+        data_dir (str): Path to datasets directory to be searched. Subdirectories are also searched.
+
+    Returns:
+        list: Paths to files or directories that are descendent of data_dir
+              and have a valid extension.
+    """
+    VALID_EXTENSIONS = [
+        ".h5ad",
+        ".h5",
+        ".zip",
+        ".tar",
+        ".tar.gz",
+        ".loom",
+        ".h5seurat",
+        ".rds",
+        ".zarr",
+    ]
+    valid_paths = []  # return value to be populated
+    for root, dirs, files in os.walk(data_dir):
+        for file in dirs + files:
+            if any([file.endswith(ext) for ext in VALID_EXTENSIONS]):
+                valid_paths += [os.path.join(root, file)]
+                # if this is a directory, e.g. .zarr "files", prevent further recursion:
+                if file in dirs:
+                    dirs.remove(file)
+            elif (
+                file in dirs
+            ):  # check if `file` is a MEX formatted directory (we must look at the subfiles)
+                # https://www.10xgenomics.com/support/software/xenium-panel-designer/latest/tutorials/create-single-cell-reference
+                count_tsvgz = 0  # MEX directoris have two subfiles with .tsv.gz extension
+                count_mtxgz = 0  # MEX directories also have one subfile with .mtx.gz extension
+                for subfile in os.listdir(os.path.join(root, file)):
+                    if subfile.endswith(".tsv.gz"):
+                        count_tsvgz += 1
+                    elif subfile.endswith(".mtx.gz"):
+                        count_mtxgz += 1
+                    if count_tsvgz == 2 and count_mtxgz == 1:
+                        valid_paths += [os.path.join(root, file)]
+                        dirs.remove(file)
+                        break
+    return valid_paths
