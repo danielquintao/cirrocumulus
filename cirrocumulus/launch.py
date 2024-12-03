@@ -9,6 +9,7 @@ from cirrocumulus.envir import (
     CIRRO_AUTH,
     CIRRO_CELL_ONTOLOGY,
     CIRRO_COMPRESS,
+    CIRRO_DATA_DIR,
     CIRRO_DATABASE,
     CIRRO_JOB_RESULTS,
     CIRRO_JOB_TYPE,
@@ -138,14 +139,21 @@ def create_parser(description=False):
     )
     parser.add_argument(
         "--json_path",
-        help="Path to directory where JSON files containing metadata (e.g. your annotations) must be stored. "
-        + "By default (argument not given), the JSON files are written next to the corresponding data file.",
+        help="Path to directory where JSON files containing metadata (e.g., your annotations) must be stored. "
+        + "By default (i.e., when this option is not used), the JSON files are written next to the corresponding "
+        + "data file. This options gives an alternative to store the metadata in a separate path.\n"
+        + "ATTENTION: This argument requires --use_datadir, because the location of the datasets relative to "
+        + "the reference directory will be used inside the <JSON PATH> in order to match the dataset files to the "
+        + "corresponding JSON files. Therefore, if you use this option:\n"
+        + "1. Use --use_datadir (mandatory).\n"
+        + "2. Try to consistently pass the same datasets directory (main argument) when you re-run cirro launch.",
     )
     return parser
 
 
 def main(argsv):
-    args = create_parser(True).parse_args(argsv)
+    parser = create_parser(True)
+    args = parser.parse_args(argsv)
     if args.results is not None:
         os.environ[CIRRO_JOB_RESULTS] = args.results
     else:
@@ -156,7 +164,16 @@ def main(argsv):
         )
     if args.json_path is not None:
         os.environ[CIRRO_JSON_BASE_PATH] = args.json_path
+        if not args.use_datadir:
+            parser.error(
+                "When --json_path is used, --use_datadir is mandatory. Use --help to learn how to use it."
+            )
     if args.use_datadir:
+        if len(args.dataset) > 1:
+            parser.error(
+                "When --use_datadir is used, only one main argument is accepted. Use --help to learn how to use it."
+            )
+        os.environ[CIRRO_DATA_DIR] = args.dataset[0]
         args.dataset = filter_dataset_directory(args.dataset[0])
     get_fs(os.environ[CIRRO_JOB_RESULTS]).makedirs(os.environ[CIRRO_JOB_RESULTS], exist_ok=True)
     if args.ontology is not None:

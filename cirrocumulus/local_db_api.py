@@ -4,6 +4,7 @@ import datetime
 
 from cirrocumulus.abstract_db import AbstractDB
 from cirrocumulus.envir import (
+    CIRRO_DATA_DIR,
     CIRRO_JOB_RESULTS,
     CIRRO_JSON_BASE_PATH,
     SERVER_CAPABILITY_ADD_DATASET,
@@ -66,10 +67,21 @@ class LocalDbAPI(AbstractDB):
         for i in range(len(paths)):
             path = paths[i]
             json_data = {}
-            basename = os.path.splitext(path)[0]
             if CIRRO_JSON_BASE_PATH in os.environ and os.environ[CIRRO_JSON_BASE_PATH] is not None:
-                basename = os.path.join(os.environ[CIRRO_JSON_BASE_PATH], basename)
+                # launch.py asserts that when --json_path is used, then --use_datadir is used too,
+                # but let us nonetheless check that CIRRO_DATA_DIR is present
+                if CIRRO_DATA_DIR not in os.environ or os.environ[CIRRO_DATA_DIR] is None:
+                    raise ValueError("CIRRO_DATA_DIR must be set when CIRRO_JSON_BASE_PATH is set.")
+                relative = os.path.relpath(
+                    path, start=os.environ[CIRRO_DATA_DIR]
+                )  # /path/to/datadir/x/y/data.ext -> x/y/data.ext
+                relative = os.path.splitext(relative)[0]  # x/y/data.ext -> x/y/data
+                basename = os.path.join(
+                    os.environ[CIRRO_JSON_BASE_PATH], relative
+                )  # x/y/data -> /json/path/x/y/data (".json" added later)
                 os.makedirs(os.path.dirname(basename), mode=0o755, exist_ok=True)
+            else:
+                basename = os.path.splitext(path)[0]  # do not confound with os.path.basename...
             old_path = basename + "_filters.json"
             json_path = basename + ".json"
             if os.path.exists(old_path) and os.path.getsize(old_path) > 0:
