@@ -231,6 +231,10 @@ def filter_dataset_directory(data_dir):
         ".h5seurat",
         ".rds",
         ".zarr",
+        ".cpq",
+        ".pq",
+        ".parquet",
+        ".pqt",
     ]
     valid_paths = []  # return value to be populated
     for root, dirs, files in os.walk(data_dir):
