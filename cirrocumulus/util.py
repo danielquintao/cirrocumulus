@@ -211,7 +211,7 @@ def adata2gct(adata, f):
     write_bottom_half_gct(f, adata.obs, pd.DataFrame(adata.X), "", data_float_format, "")
 
 
-def filter_dataset_directory(data_dir):
+def filter_dataset_directory(data_dir, command_type="serve"):
     """Looks for files or directories that are descendent of data_dir and have a valid extension.
 
     Args:
@@ -221,21 +221,36 @@ def filter_dataset_directory(data_dir):
         list: Paths to files or directories that are descendent of data_dir
               and have a valid extension.
     """
-    VALID_EXTENSIONS = [
-        ".h5ad",
-        ".h5",
-        ".zip",
-        ".tar",
-        ".tar.gz",
-        ".loom",
-        ".h5seurat",
-        ".rds",
-        ".zarr",
-        ".cpq",
-        ".pq",
-        ".parquet",
-        ".pqt",
-    ]
+    assert command_type in ["serve", "launch"]
+    VALID_EXTENSIONS = (
+        [
+            ".h5ad",
+            ".h5",
+            ".zip",
+            ".tar",
+            ".tar.gz",
+            ".loom",
+            ".h5seurat",
+            ".rds",
+            ".zarr",
+            ".cpq",  # parquet
+            ".pq",  # parquet
+            ".parquet",  # parquet
+            ".pqt",  # parquet
+            ".cxg",  # tiledb
+        ]
+        if command_type == "serve"
+        else [
+            ".h5ad",
+            ".h5",
+            ".loom",
+            ".h5seurat",
+            ".rds",
+            ".zarr",
+            ".tsv",  # star fusion (according to anndata_dataset.py)
+            ".cxg",  # tiledb
+        ]
+    )
     valid_paths = []  # return value to be populated
     for root, dirs, files in os.walk(data_dir):
         for file in dirs + files:
@@ -246,17 +261,30 @@ def filter_dataset_directory(data_dir):
                     dirs.remove(file)
             elif (
                 file in dirs
-            ):  # check if `file` is a MEX formatted directory (we must look at the subfiles)
-                # https://www.10xgenomics.com/support/software/xenium-panel-designer/latest/tutorials/create-single-cell-reference
-                count_tsvgz = 0  # MEX directoris have two subfiles with .tsv.gz extension
-                count_mtxgz = 0  # MEX directories also have one subfile with .mtx.gz extension
+            ):  # check if `file` is a JSONL-formatted directory created by cirro prepare_data
+                found_jsonl = False
+                found_idx_json = False
                 for subfile in os.listdir(os.path.join(root, file)):
-                    if subfile.endswith(".tsv.gz"):
-                        count_tsvgz += 1
-                    elif subfile.endswith(".mtx.gz"):
-                        count_mtxgz += 1
-                    if count_tsvgz == 2 and count_mtxgz == 1:
+                    if subfile.endswith(".jsonl"):
+                        found_jsonl = True
+                    elif subfile.endswith(".idx.json"):
+                        found_idx_json = True
+                    if found_jsonl and found_idx_json == 1:
                         valid_paths += [os.path.join(root, file)]
                         dirs.remove(file)
                         break
+                if command_type == "serve":
+                    # check if `file` is a MEX formatted directory (we must look at the subfiles)
+                    # https://www.10xgenomics.com/support/software/xenium-panel-designer/latest/tutorials/create-single-cell-reference
+                    count_tsvgz = 0  # MEX directoris have two subfiles with .tsv.gz extension
+                    count_mtxgz = 0  # MEX directories also have one subfile with .mtx.gz extension
+                    for subfile in os.listdir(os.path.join(root, file)):
+                        if subfile.endswith(".tsv.gz"):
+                            count_tsvgz += 1
+                        elif subfile.endswith(".mtx.gz"):
+                            count_mtxgz += 1
+                        if count_tsvgz == 2 and count_mtxgz == 1:
+                            valid_paths += [os.path.join(root, file)]
+                            dirs.remove(file)
+                            break
     return valid_paths

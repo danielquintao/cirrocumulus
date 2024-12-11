@@ -174,7 +174,7 @@ def main(argsv):
                 "When --use_datadir is used, only one main argument is accepted. Use --help to learn how to use it."
             )
         os.environ[CIRRO_DATA_DIR] = args.dataset[0]
-        args.dataset = filter_dataset_directory(args.dataset[0])
+        args.dataset = filter_dataset_directory(args.dataset[0], command_type="launch")
     get_fs(os.environ[CIRRO_JOB_RESULTS]).makedirs(os.environ[CIRRO_JOB_RESULTS], exist_ok=True)
     if args.ontology is not None:
         os.environ[CIRRO_CELL_ONTOLOGY] = args.ontology
